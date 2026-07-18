@@ -1,0 +1,108 @@
+name: E2E
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  cta-focus-restoration:
+    name: CTA focus restoration (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ matrix.browser }}-${{ runner.os }}-v1
+
+      - name: Install JS deps
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright (Python) + ${{ matrix.browser }}
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install playwright==1.48.0
+          python -m playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Start dev server
+        run: |
+          bun run dev > dev-server.log 2>&1 &
+          echo $! > dev-server.pid
+        env:
+          CI: "true"
+
+      - name: Wait for dev server
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sSf http://localhost:8080/ >/dev/null 2>&1; then
+              echo "Dev server is up after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Dev server never came up. Last 100 lines of log:"
+          tail -n 100 dev-server.log || true
+          exit 1
+
+      - name: Run CTA focus restoration E2E (${{ matrix.browser }})
+        env:
+          BASE_URL: http://localhost:8080
+          BROWSER: ${{ matrix.browser }}
+        run: python e2e/cta_focus_restoration.py
+
+      - name: Run Track Status E2E (${{ matrix.browser }})
+        env:
+          BASE_URL: http://localhost:8080
+          BROWSER: ${{ matrix.browser }}
+        run: python e2e/track_status.py
+
+      - name: Run Apply wizard E2E (${{ matrix.browser }})
+        env:
+          BASE_URL: http://localhost:8080
+          BROWSER: ${{ matrix.browser }}
+        run: python e2e/apply_wizard.py
+
+      - name: Run Admin dashboard E2E (${{ matrix.browser }})
+        env:
+          BASE_URL: http://localhost:8080
+          BROWSER: ${{ matrix.browser }}
+        run: python e2e/admin_dashboard.py
+
+      - name: Stop dev server
+        if: always()
+        run: |
+          if [ -f dev-server.pid ]; then
+            kill "$(cat dev-server.pid)" 2>/dev/null || true
+          fi
+
+      - name: Upload debug artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cta-focus-restoration-${{ matrix.browser }}-artifacts
+          path: |
+            e2e/shots/**
+            dev-server.log
+          if-no-files-found: ignore
+          retention-days: 14
+
