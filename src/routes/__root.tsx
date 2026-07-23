@@ -151,17 +151,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+import { ReactNode } from 'react';
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
-<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18316597749"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'AW-18316597749');
-</script>
+        {/* Google Tag Manager / Ads Script */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18316597749" />
+        
+        {/* Inline Script Fix */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'AW-18316597749');
+            `,
+          }}
+        />
         <HeadContent />
       </head>
       <body>
