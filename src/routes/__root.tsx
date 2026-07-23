@@ -155,8 +155,6 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
-        <HeadContent />
-         <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18316597749"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -164,6 +162,7 @@ function RootShell({ children }: { children: ReactNode }) {
   gtag('js', new Date());
   gtag('config', 'AW-18316597749');
 </script>
+        <HeadContent />
       </head>
       <body>
         {children}
