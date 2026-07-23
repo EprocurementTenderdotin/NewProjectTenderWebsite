@@ -151,8 +151,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
-import { ReactNode } from 'react';
-
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
